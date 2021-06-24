@@ -16,6 +16,14 @@ body {
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
+#loader {
+  display: hidden;
+}
+
+#loader.loading {
+  display: block;
+}
+
 .grid {
   margin-top: var(--grid-item-spacing);
   margin-left: var(--grid-item-spacing);

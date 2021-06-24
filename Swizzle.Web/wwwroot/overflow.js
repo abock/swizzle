@@ -49,6 +49,16 @@ class Overflow {
     return false;
   }
 
+  _startLoadItems() {
+    this._loading = true;
+    this._loaderElem.classList.add('loading');
+  }
+
+  _endLoadItems() {
+    this._loadingItems = false;
+    this._loaderElem.classList.remove('loading');
+  }
+
   _loadItems() {
     if (this._loadingItems) {
       return;
@@ -57,7 +67,8 @@ class Overflow {
     const unableToLoadItems = function() {
     };
 
-    this._loadingItems = true;
+    this._startLoadItems();
+
     const offset = this._currentItemOffset;
     const limit = this._itemBatchSize;
 
@@ -87,7 +98,7 @@ class Overflow {
           unableToLoadItems();
         }
       } finally {
-        this._loadingItems = false;
+        this._endLoadItems();
         setTimeout(() => this._maybeLoadMoreItems(), 1000);
       }  
     };
