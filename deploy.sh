@@ -1,12 +1,13 @@
 #!/bin/bash -ex
 
+rid=linux-x64
 config=Release
 
 host=W56B1HhBEq66IOfG3qCSv
 app_path=web/swizzle/app
 
 rm -rf _deploy
-dotnet publish -c "$config" -o _deploy
+dotnet publish -r "$rid" -c "$config" -o _deploy
 mv _deploy/Swizzle.Web _deploy/swizzle
 chmod +x _deploy/swizzle
 tar -c -f swizzle.app.tar -C _deploy .
