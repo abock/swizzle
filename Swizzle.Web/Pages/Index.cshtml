@@ -1,7 +1,13 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    var host = Request.Host.Host;
+    var ofs = host.IndexOf("overflow");
+    if (ofs > 0)
+        host = char.ToUpper(host[0]) +
+            host.Substring(1, ofs - 1) +
+            "O" + host.Substring(ofs + 1);
+    ViewData["Title"] = host;
 }
 
 <div id="items" class="grid">
