@@ -42,7 +42,7 @@ namespace Swizzle.Controllers
         {
             ConfigureNoCache();
 
-            var baseUri = new Uri($"{Request.Scheme}://{Request.Host}/");
+            var baseUri = new Uri($"https://{Request.Host}/");
 
             var query = _ingestionService
                 .GetCollection(Request.Host.Host)
