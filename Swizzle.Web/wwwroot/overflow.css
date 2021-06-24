@@ -17,11 +17,13 @@ body {
 }
 
 #loader {
-  display: hidden;
+  visibility: hidden;
+  text-align: center;
+  margin: calc(3 * var(--grid-item-spacing)) 0;
 }
 
 #loader.loading {
-  display: block;
+  visibility: visible;
 }
 
 .grid {
@@ -32,7 +34,7 @@ body {
 .grid-item-gutter-sizer {
   width: var(--grid-item-spacing);
   height: 0px;
-  display: hidden;
+  display: block;
 }
 
 .grid-item {
@@ -84,5 +86,41 @@ body {
 @media only screen and (min-width: 2200px) {
   .grid-item {
     width: calc(100% / 6 - var(--grid-item-spacing));
+  }
+}
+
+.lds-ripple {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.lds-ripple div {
+  position: absolute;
+  border: 4px solid #fff;
+  opacity: 1;
+  border-radius: 50%;
+  animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.lds-ripple div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+
+@keyframes lds-ripple {
+  0% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 0px;
+    left: 0px;
+    width: 72px;
+    height: 72px;
+    opacity: 0;
   }
 }
