@@ -130,7 +130,7 @@ class Overflow {
         videoElem.onloadedmetadata = () => this._masonry.layout();
   
         const sourceElem = document.createElement('source');
-        sourceElem.src = resourrce.uri;
+        sourceElem.src = resource.uri;
         sourceElem.type = resource.contentType;
         videoElem.appendChild(sourceElem);
 
