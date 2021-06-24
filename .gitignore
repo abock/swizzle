@@ -3,4 +3,5 @@
 bin/
 obj/
 
-/swizzle-data/
+/collections/
+/_deploy/
