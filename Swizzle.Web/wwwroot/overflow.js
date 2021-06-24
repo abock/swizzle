@@ -110,8 +110,6 @@ class Overflow {
     const itemElem = document.createElement('div');
     itemElem.classList.add('grid-item');
 
-    console.log(item);
-
     const createVideoElement = function() {
       if (window.safari) {
         const videoElem = document.createElement('img');
@@ -127,7 +125,16 @@ class Overflow {
         videoElem.muted = true;
         videoElem.defaultMuted = true;
         videoElem.playsInline = true;
+
+        // Saner browsers (Safari, Chrome) update the DOM with video dimension
+        // metadata as they should, so we can early layout...
         videoElem.onloadedmetadata = () => this._masonry.layout();
+
+        // But oh no, not Firefox. Firefox does not update the DOM with any
+        // video dimension metadata that came in via the above 'loadedmetadata'
+        // event, so we have to layout again when it's ready to render the
+        // first frame.
+        videoElem.onloadeddata = () => this._masonry.layout();
   
         const sourceElem = document.createElement('source');
         sourceElem.src = resource.uri;
