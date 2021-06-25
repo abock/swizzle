@@ -1,11 +1,41 @@
+/// <reference path="masonry.d.ts"/>
+
+interface ItemResourceDto {
+  contentType: string;
+  uri: string;
+  size: number;
+  creationTime: string;
+  lastWriteTime: string;
+}
+
+interface ItemDto {
+  uri: string;
+  creationTime: string;
+  lastWriteTime: string;
+  resources: ItemResourceDto[];
+}
+
 window.addEventListener('DOMContentLoaded', e => {
-  window._overflowapp = new Overflow(
-    document.getElementById('items'),
-    document.getElementById('loader'));
+  const itemsElem = document.getElementById('items');
+  const loaderElem = document.getElementById('loader');
+  if (itemsElem && loaderElem) {
+    (window as any)._overflowapp = new Overflow(itemsElem, loaderElem);
+  }
 });
 
 class Overflow {
-  constructor(itemsContainerElem, loaderElem) {
+  _loadingItems: boolean
+  _currentItemOffset: number;
+  _totalItems: number;
+  _itemBatchSize: number;
+  _lastLoaderTop: number
+  _itemsContainerElem: HTMLElement
+  _loaderElem: HTMLElement
+  _masonry: Masonry
+
+  constructor(
+    itemsContainerElem: HTMLElement,
+    loaderElem: HTMLElement) {
     this._loadingItems = false;
     this._currentItemOffset = 0;
     this._totalItems = 0;
@@ -30,12 +60,12 @@ class Overflow {
     document.addEventListener('scroll', e => this._maybeLoadMoreItems());
   }
 
-  _areBoundsInViewport(bounds) {
+  _areBoundsInViewport(bounds: DOMRect) {
     return (
       Math.ceil(bounds.top) >= 0 &&
       Math.ceil(bounds.left) >= 0 &&
       Math.floor(bounds.bottom) <= document.documentElement.clientHeight &&
-      Math.floor(bounds.right <= document.documentElement.clientWidth));
+      Math.floor(bounds.right) <= document.documentElement.clientWidth);
   }
 
   _maybeLoadMoreItems() {
@@ -50,7 +80,7 @@ class Overflow {
   }
 
   _startLoadItems() {
-    this._loading = true;
+    this._loadingItems = true;
     this._loaderElem.classList.add('loading');
   }
 
@@ -106,7 +136,7 @@ class Overflow {
     httpClient.send(null);
   }
 
-  async _renderItems(items) {
+  async _renderItems(items: ItemDto[]) {
     for (const item of items) {
       for (const resource of item.resources) {
         if (resource.contentType === 'video/mp4') {
@@ -117,12 +147,12 @@ class Overflow {
     }
   }
 
-  _renderItem(item, resource) {
+  _renderItem(item: ItemDto, resource: ItemResourceDto) {
     const itemElem = document.createElement('div');
     itemElem.classList.add('grid-item');
 
-    const createVideoElement = function() {
-      if (window.safari) {
+    const createVideoElement = () => {
+      if ((window as any)?.safari) {
         const videoElem = document.createElement('img');
         videoElem.src = resource.uri;
         videoElem.onload = e => this._masonry.layout();
@@ -156,7 +186,7 @@ class Overflow {
       }
     };
 
-    const videoElem = createVideoElement.apply(this);
+    const videoElem = createVideoElement();
     videoElem.classList.add('media');
     itemElem.appendChild(videoElem);
 
