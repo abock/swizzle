@@ -12,6 +12,7 @@ namespace Swizzle.Dto
             this Item item,
             Uri baseUri)
             => new(
+                item.Slug,
                 new Uri(baseUri, item.Slug),
                 item.CreationTime,
                 item.LastWriteTime,

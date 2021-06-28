@@ -9,6 +9,7 @@ interface ItemResourceDto {
 }
 
 interface ItemDto {
+  slug: string;
   uri: string;
   creationTime: string;
   lastWriteTime: string;
