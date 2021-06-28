@@ -25,12 +25,6 @@ namespace Swizzle
             }
         }
 
-        [DllImport("libc")]
-        static extern IntPtr dlopen(string path, int flags);
-
-        [DllImport("libc")]
-        static extern IntPtr dlsym(IntPtr handle, string symbol);
-
         const int AVFormatContext_field_offset__nb_streams = 44;
         const int AVFormatContext_field_offset__streams = 48;
         const int AVFormatContext_field_offset__duration = 1096;
@@ -86,11 +80,11 @@ namespace Swizzle
             if (ffmpegPath is null)
                 return;
 
-            var handle = dlopen(ffmpegPath, 0);
+            var handle = NativeLibrary.Load(ffmpegPath);
 
             T Dlsym<T>(string symbol)
                 => Marshal.GetDelegateForFunctionPointer<T>(
-                    dlsym(handle, symbol));
+                    NativeLibrary.GetExport(handle, symbol));
 
             avformat_alloc_context = Dlsym<avformat_alloc_context_fn>(
                 nameof(avformat_alloc_context));
