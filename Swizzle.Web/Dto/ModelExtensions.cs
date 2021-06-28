@@ -31,7 +31,9 @@ namespace Swizzle.Dto
                 uri,
                 resource.Size,
                 resource.CreationTime,
-                resource.LastWriteTime);
-
+                resource.LastWriteTime,
+                resource.Width,
+                resource.Height,
+                resource.Duration.TotalSeconds);
     }
 }

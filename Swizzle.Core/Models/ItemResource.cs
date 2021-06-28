@@ -10,7 +10,10 @@ namespace Swizzle.Models
         string PhysicalPath,
         long Size,
         DateTimeOffset CreationTime,
-        DateTimeOffset LastWriteTime) : IFileInfo
+        DateTimeOffset LastWriteTime,
+        int Width,
+        int Height,
+        TimeSpan Duration) : IFileInfo
     {
         public bool Exists => File.Exists(PhysicalPath);
         bool IFileInfo.IsDirectory => false;

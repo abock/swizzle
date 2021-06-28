@@ -321,12 +321,20 @@ namespace Swizzle.Services
                 CancellationToken cancellationToken)
             {
                 var fileInfo = new FileInfo(FilePath);
+
+                FFMpeg.TryGetVideoStreamMetadata(
+                    fileInfo.FullName,
+                    out var videoStreamMetadata);
+
                 return new ItemResource(
                     ResourceKind,
                     FilePath,
                     fileInfo.Length,
                     fileInfo.CreationTime,
-                    fileInfo.LastWriteTime);
+                    fileInfo.LastWriteTime,
+                    videoStreamMetadata.Width,
+                    videoStreamMetadata.Height,
+                    videoStreamMetadata.Duration);
             }
         }
 

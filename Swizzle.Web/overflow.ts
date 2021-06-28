@@ -6,6 +6,9 @@ interface ItemResourceDto {
   size: number;
   creationTime: string;
   lastWriteTime: string;
+  width: number;
+  height: number;
+  duration: number;
 }
 
 interface ItemDto {

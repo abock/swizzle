@@ -7,5 +7,8 @@ namespace Swizzle.Dto
         Uri Uri,
         long Size,
         DateTimeOffset CreationTime,
-        DateTimeOffset LastWriteTime);
+        DateTimeOffset LastWriteTime,
+        int Width,
+        int Height,
+        double Duration);
 }
