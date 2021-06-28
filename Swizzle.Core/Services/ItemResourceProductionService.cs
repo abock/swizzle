@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 using Swizzle.Models;
 
@@ -37,13 +38,16 @@ namespace Swizzle.Services
             ItemResourceKind fromKind,
             string fromPath,
             ItemResourceKind toKind,
-            string toPath)
+            string toPath,
+            CancellationToken cancellationToken)
         {
             if (!s_map.TryGetValue(fromKind, out var viableToKinds))
                 return false;
 
             foreach (var viableToKind in viableToKinds)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (viableToKind.Kind == toKind)
                 {
                     viableToKind.Converter(fromPath, toPath);

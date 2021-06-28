@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using HashidsNet;
 
 using Swizzle.Models;
-using Microsoft.Extensions.Logging;
 
 namespace Swizzle.Services
 {
@@ -107,15 +108,20 @@ namespace Swizzle.Services
 
         public void IngestRegisteredCollections(
             IngestFileOptions options = IngestFileOptions.IngestSingle,
-            Func<string, Exception, bool>? itemExceptionHandler = null)
+            Func<string, Exception, bool>? itemExceptionHandler = null,
+            CancellationToken cancellationToken = default)
         {
             foreach (var collectionKey in _collections.Keys)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 foreach (var _ in IngestDirectory(
                     Path.Combine(ContentRootPath, collectionKey),
                     options,
-                    itemExceptionHandler))
+                    itemExceptionHandler,
+                    cancellationToken))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
                 _logger.LogInformation(
@@ -128,7 +134,8 @@ namespace Swizzle.Services
         public IEnumerable<Item> IngestDirectory(
             string directoryPath,
             IngestFileOptions options = IngestFileOptions.IngestSingle,
-            Func<string, Exception, bool>? itemExceptionHandler = null)
+            Func<string, Exception, bool>? itemExceptionHandler = null,
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation(
                 "Ingesting directory: {DirectoryPath}",
@@ -136,6 +143,8 @@ namespace Swizzle.Services
 
             foreach (var filePath in Directory.EnumerateFiles(directoryPath))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 Item? item = null;
 
                 try
@@ -158,7 +167,8 @@ namespace Swizzle.Services
 
         public Item IngestFile(
             string filePath,
-            IngestFileOptions options = IngestFileOptions.IngestSingle)
+            IngestFileOptions options = IngestFileOptions.IngestSingle,
+            CancellationToken cancellationToken = default)
         {
             var ingestionMetadata = ValidateIngestionPath(filePath);
 
@@ -167,12 +177,16 @@ namespace Swizzle.Services
                     $"file does not exist: {ingestionMetadata.FilePath}",
                     ingestionMetadata.FilePath);
 
-            return IngestFile(ingestionMetadata, options);
+            return IngestFile(
+                ingestionMetadata,
+                options,
+                cancellationToken);
         }
 
         Item IngestFile(
             ValidatedIngestionMetadata ingestionMetadata,
-            IngestFileOptions options)
+            IngestFileOptions options,
+            CancellationToken cancellationToken)
         {
             _logger.LogTrace(
                 "Ingesting: {FilePath}",
@@ -194,13 +208,13 @@ namespace Swizzle.Services
                         ingestionMetadata.Slug),
                     ingestionMetadata.CollectionKey,
                     ingestionMetadata.Slug,
-                    ingestionMetadata.CreateItemResource());
+                    ingestionMetadata.CreateItemResource(cancellationToken));
             }
             else if (!item.TryGetResource(ingestionMetadata.FilePath, out _))
             {
                 collectionUpdateNeeded = true;
                 item = item.AddResource(
-                    ingestionMetadata.CreateItemResource());
+                    ingestionMetadata.CreateItemResource(cancellationToken));
             }
 
             if (collectionUpdateNeeded)
@@ -218,18 +232,23 @@ namespace Swizzle.Services
             {
                 item = IngestAlternateResources(
                     item,
-                    produceResources: false);
+                    produceResources: false,
+                    cancellationToken: cancellationToken);
 
                 if (options == IngestFileOptions.ProduceAlternateResources)
                     item = IngestAlternateResources(
                         item,
-                        produceResources: true);
+                        produceResources: true,
+                        cancellationToken: cancellationToken);
             }
 
             return item;
         }
 
-        Item IngestAlternateResources(Item item, bool produceResources)
+        Item IngestAlternateResources(
+            Item item,
+            bool produceResources,
+            CancellationToken cancellationToken)
         {
             foreach (var kind in ItemResourceKind.All)
             {
@@ -243,13 +262,17 @@ namespace Swizzle.Services
                         if (!ingestionMetadata.FileExists &&
                             produceResources &&
                             extension == kind.PreferredExtension &&
-                            ProduceResource(item, ingestionMetadata))
+                            ProduceResource(
+                                item,
+                                ingestionMetadata,
+                                cancellationToken))
                             ingestionMetadata = ValidateIngestionPath(filePath);
 
                         if (ingestionMetadata.FileExists)
                             item = IngestFile(
                                 ingestionMetadata,
-                                IngestFileOptions.IngestSingle);
+                                IngestFileOptions.IngestSingle,
+                                cancellationToken);
                     }
                 }
             }
@@ -259,17 +282,21 @@ namespace Swizzle.Services
 
         static bool ProduceResource(
             Item item,
-            ValidatedIngestionMetadata ingestionMetadata)
+            ValidatedIngestionMetadata ingestionMetadata,
+            CancellationToken cancellationToken)
         {
             foreach (var existingResource in item.Resources)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
                     if (ItemResourceProductionService.ConvertItemResource(
                         existingResource.Kind,
                         existingResource.PhysicalPath,
                         ingestionMetadata.ResourceKind,
-                        ingestionMetadata.FilePath))
+                        ingestionMetadata.FilePath,
+                        cancellationToken))
                         return true;
                 }
                 catch
@@ -290,7 +317,8 @@ namespace Swizzle.Services
             public bool FileExists { get; init; }
             public string Slug { get; init; }
 
-            public ItemResource CreateItemResource()
+            public ItemResource CreateItemResource(
+                CancellationToken cancellationToken)
             {
                 var fileInfo = new FileInfo(FilePath);
                 return new ItemResource(
