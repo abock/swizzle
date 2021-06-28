@@ -19,23 +19,103 @@ interface ItemDto {
   resources: ItemResourceDto[];
 }
 
-window.addEventListener('DOMContentLoaded', e => {
-  const itemsElem = document.getElementById('items');
-  const loaderElem = document.getElementById('loader');
-  if (itemsElem && loaderElem) {
-    (window as any)._overflowapp = new Overflow(itemsElem, loaderElem);
+class ItemView {
+  readonly item: ItemDto;
+  readonly containerElem?: HTMLDivElement;
+  
+  private readonly mediaContainerElem?: HTMLDivElement;
+  private readonly videoElem?: HTMLVideoElement;
+  private readonly notifyLayoutChanged: (view: ItemView) => void;
+
+  constructor(
+    item: ItemDto,
+    notifyLayoutChanged: (view: ItemView) => void) {
+    this.item = item;
+    this.notifyLayoutChanged = notifyLayoutChanged;
+
+    let posterUri: string | null = null;
+    let videoWidth: number = 0;
+    let videoHeight: number = 0;
+    const sourceElems: HTMLSourceElement[] = [];
+
+    for (const resource of item.resources) {
+      if (resource.contentType.startsWith('video/')) {
+        if (videoWidth === 0)
+          videoWidth = resource.width;
+        if (videoHeight === 0)
+          videoHeight = resource.height;
+        const sourceElem = document.createElement('source');
+        sourceElem.src = resource.uri;
+        sourceElem.type = resource.contentType;
+        sourceElems.push(sourceElem);
+      } else if (resource.contentType === 'image/jpeg') {
+        posterUri = resource.uri;
+      }
+    }
+
+    if (sourceElems.length === 0 || !posterUri)
+      return;
+
+    this.containerElem = document.createElement('div');
+    this.containerElem.setAttribute('data-slug', item.slug);
+    this.containerElem.classList.add('grid-item');
+
+    this.mediaContainerElem = document.createElement('div');
+    this.mediaContainerElem.classList.add('media-container');
+    this.containerElem.appendChild(this.mediaContainerElem);
+
+    this.videoElem = document.createElement('video');
+    this.videoElem.preload
+    this.videoElem.loop = true;
+    this.videoElem.muted = true;
+    this.videoElem.defaultMuted = true;
+    this.videoElem.playsInline = true;
+    this.videoElem.onloadedmetadata = () => this.maybeUpdateLayout();
+    this.videoElem.onloadeddata = () => this.maybeUpdateLayout();
+    this.videoElem.onclick = () => this.togglePlay();
+
+    // this.videoElem.poster = posterUri;
+    this.videoElem.style.backgroundImage = `url('${posterUri}')`;
+    for (const sourceElem of sourceElems)
+      this.videoElem.appendChild(sourceElem);
+
+    this.mediaContainerElem.appendChild(this.videoElem);
   }
-});
+
+  private maybeUpdateLayout() {
+    this.notifyLayoutChanged(this);
+  }
+
+  play() {
+    this.videoElem?.play();
+  }
+
+  pause() {
+    this.videoElem?.pause();
+  }
+
+  togglePlay() {
+    if (!this.videoElem)
+      return;
+    if (this.videoElem.readyState === 0)
+      this.videoElem.load();
+    if (this.videoElem.paused) {
+      this.play();
+    } else {
+      this.pause();
+    }
+  }
+}
 
 class Overflow {
-  _loadingItems: boolean
+  _loadingItems: boolean;
   _currentItemOffset: number;
   _totalItems: number;
   _itemBatchSize: number;
-  _lastLoaderTop: number
-  _itemsContainerElem: HTMLElement
-  _loaderElem: HTMLElement
-  _masonry: Masonry
+  _lastLoaderTop: number;
+  _itemsContainerElem: HTMLElement;
+  _loaderElem: HTMLElement;
+  _masonry: Masonry;
 
   constructor(
     itemsContainerElem: HTMLElement,
@@ -98,7 +178,7 @@ class Overflow {
       return;
     }
 
-    const unableToLoadItems = function() {
+    const unableToLoadItems = () => {
     };
 
     this._startLoadItems();
@@ -133,70 +213,33 @@ class Overflow {
         }
       } finally {
         this._endLoadItems();
-        setTimeout(() => this._maybeLoadMoreItems(), 1000);
       }  
     };
     httpClient.onerror = e => unableToLoadItems();
     httpClient.send(null);
   }
 
-  async _renderItems(items: ItemDto[]) {
+  _renderItems(items: ItemDto[]) {
     for (const item of items) {
-      for (const resource of item.resources) {
-        if (resource.contentType === 'video/mp4') {
-          this._renderItem(item, resource);
-          break;
-        }
-      }
+      this._renderItem(item);
     }
   }
 
-  _renderItem(item: ItemDto, resource: ItemResourceDto) {
-    const itemElem = document.createElement('div');
-    itemElem.classList.add('grid-item');
-
-    const createVideoElement = () => {
-      if ((window as any)?.safari) {
-        const videoElem = document.createElement('img');
-        videoElem.src = resource.uri;
-        videoElem.onload = e => this._masonry.layout();
-
-        return videoElem;
-      } else {
-        const videoElem = document.createElement('video');
-  
-        videoElem.autoplay = true;
-        videoElem.loop = true;
-        videoElem.muted = true;
-        videoElem.defaultMuted = true;
-        videoElem.playsInline = true;
-
-        // Saner browsers (Safari, Chrome) update the DOM with video dimension
-        // metadata as they should, so we can early layout...
-        videoElem.onloadedmetadata = () => this._masonry.layout();
-
-        // But oh no, not Firefox. Firefox does not update the DOM with any
-        // video dimension metadata that came in via the above 'loadedmetadata'
-        // event, so we have to layout again when it's ready to render the
-        // first frame.
-        videoElem.onloadeddata = () => this._masonry.layout();
-  
-        const sourceElem = document.createElement('source');
-        sourceElem.src = resource.uri;
-        sourceElem.type = resource.contentType;
-        videoElem.appendChild(sourceElem);
-
-        return videoElem;
-      }
-    };
-
-    const videoElem = createVideoElement();
-    videoElem.classList.add('media');
-    itemElem.appendChild(videoElem);
-
-    this._itemsContainerElem.appendChild(itemElem);
-    this._masonry.appended(itemElem);
-    this._masonry.layout();
-    this._totalItems++;
+  _renderItem(item: ItemDto) {
+    const itemView = new ItemView(item, _ => this._masonry.layout());
+    if (itemView.containerElem) {
+      this._itemsContainerElem.appendChild(itemView.containerElem);
+      this._masonry.appended(itemView.containerElem);
+      this._masonry.layout();
+      this._totalItems++;
+    }
   }
 }
+
+window.addEventListener('DOMContentLoaded', e => {
+  const itemsElem = document.getElementById('items');
+  const loaderElem = document.getElementById('loader');
+  if (itemsElem && loaderElem) {
+    (window as any)._overflowapp = new Overflow(itemsElem, loaderElem);
+  }
+});

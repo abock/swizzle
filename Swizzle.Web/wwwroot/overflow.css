@@ -42,10 +42,14 @@ body {
   margin-bottom: var(--grid-item-spacing);
 }
 
-.grid-item .media {
+.grid-item .media-container video {
   display: block;
   width: 100%;
   height: auto;
+
+  background-color: black;
+  background-size: cover;
+  background-repeat: no-repeat;
 
   border-radius: var(--grid-item-radius);
   box-shadow:
