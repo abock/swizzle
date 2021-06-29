@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -117,7 +118,7 @@ namespace Swizzle.Services
             Func<string, Exception, bool>? itemExceptionHandler = null,
             CancellationToken cancellationToken = default)
         {
-            foreach (var collectionKey in _collections.Keys)
+            Parallel.ForEach(_collections.Keys, collectionKey =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -126,15 +127,13 @@ namespace Swizzle.Services
                     options,
                     itemExceptionHandler,
                     cancellationToken))
-                {
                     cancellationToken.ThrowIfCancellationRequested();
-                }
 
                 _logger.LogInformation(
                     "Ingested {Count} items into {CollectionKey}",
                     _collections[collectionKey].Count,
                     collectionKey);
-            }
+            });
         }
 
         public IEnumerable<Item> IngestDirectory(
