@@ -70,9 +70,9 @@ class ItemView {
     this.videoElem.muted = true;
     this.videoElem.defaultMuted = true;
     this.videoElem.playsInline = true;
-    this.videoElem.onloadedmetadata = () => this.maybeUpdateLayout();
-    this.videoElem.onloadeddata = () => this.maybeUpdateLayout();
-    this.videoElem.onclick = () => this.togglePlay();
+    this.videoElem.addEventListener('loadedmetadata', e => this.maybeUpdateLayout());
+    this.videoElem.addEventListener('loadeddata', e => this.maybeUpdateLayout());
+    this.videoElem.addEventListener('click', e => this.togglePlay());
 
     this.videoElem.poster = posterUri;
     this.videoElem.style.backgroundImage = `url('${posterUri}')`;
@@ -108,28 +108,24 @@ class ItemView {
 }
 
 class Overflow {
-  _loadingItems: boolean;
-  _currentItemOffset: number;
-  _totalItems: number;
-  _itemBatchSize: number;
-  _lastLoaderTop: number;
-  _itemsContainerElem: HTMLElement;
-  _loaderElem: HTMLElement;
-  _masonry: Masonry;
+  private readonly itemBatchSize: number = 16;
+  private readonly itemsContainerElem: HTMLElement;
+  private readonly loaderElem: HTMLElement;
+  private readonly masonry: Masonry;
+
+  private loadingItems: boolean = false;
+  private currentItemOffset: number = 0;
+  private totalItems: number = 0;
+  private lastLoaderTop: number;
 
   constructor(
     itemsContainerElem: HTMLElement,
     loaderElem: HTMLElement) {
-    this._loadingItems = false;
-    this._currentItemOffset = 0;
-    this._totalItems = 0;
-    this._itemBatchSize = 16;
-    this._lastLoaderTop = loaderElem.offsetTop;
+    this.lastLoaderTop = loaderElem.offsetTop;
+    this.itemsContainerElem = itemsContainerElem;
+    this.loaderElem = loaderElem;
 
-    this._itemsContainerElem = itemsContainerElem;
-    this._loaderElem = loaderElem;
-
-    this._masonry = new Masonry(
+    this.masonry = new Masonry(
       itemsContainerElem,
       {
         itemSelector: '.grid-item',
@@ -139,12 +135,12 @@ class Overflow {
         transitionDuration: 0
       });
 
-    this._loadItems();
+    this.loadItems();
 
-    document.addEventListener('scroll', e => this._maybeLoadMoreItems());
+    document.addEventListener('scroll', e => this.maybeLoadMoreItems());
   }
 
-  _areBoundsInViewport(bounds: DOMRect) {
+  private areBoundsInViewport(bounds: DOMRect) {
     return (
       Math.ceil(bounds.top) >= 0 &&
       Math.ceil(bounds.left) >= 0 &&
@@ -152,39 +148,38 @@ class Overflow {
       Math.floor(bounds.right) <= document.documentElement.clientWidth);
   }
 
-  _maybeLoadMoreItems() {
-    const bounds = this._loaderElem.getBoundingClientRect();
-    if (this._loaderElem.offsetTop !== this._lastLoaderTop &&
-      this._areBoundsInViewport(bounds)) {
-      this._lastLoaderTop = this._loaderElem.offsetTop;
-      this._loadItems();
+  private maybeLoadMoreItems() {
+    const bounds = this.loaderElem.getBoundingClientRect();
+    if (this.loaderElem.offsetTop !== this.lastLoaderTop &&
+      this.areBoundsInViewport(bounds)) {
+      this.lastLoaderTop = this.loaderElem.offsetTop;
+      this.loadItems();
       return true;
     }
     return false;
   }
 
-  _startLoadItems() {
-    this._loadingItems = true;
-    this._loaderElem.classList.add('loading');
+  private startLoadItems() {
+    this.loadingItems = true;
+    this.loaderElem.classList.add('loading');
   }
 
-  _endLoadItems() {
-    this._loadingItems = false;
-    this._loaderElem.classList.remove('loading');
+  private endLoadItems() {
+    this.loadingItems = false;
+    this.loaderElem.classList.remove('loading');
   }
 
-  _loadItems() {
-    if (this._loadingItems) {
+  private loadItems() {
+    if (this.loadingItems)
       return;
-    }
 
     const unableToLoadItems = () => {
     };
 
-    this._startLoadItems();
+    this.startLoadItems();
 
-    const offset = this._currentItemOffset;
-    const limit = this._itemBatchSize;
+    const offset = this.currentItemOffset;
+    const limit = this.itemBatchSize;
 
     const httpClient = new XMLHttpRequest();
     httpClient.open('GET', `/api/query?offset=${offset}&limit=${limit}`, true);
@@ -202,36 +197,35 @@ class Overflow {
         try {
           const items = JSON.parse(httpClient.responseText);
           if (items.length === 0) {
-            this._currentItemOffset = 0;
+            this.currentItemOffset = 0;
           } else {
-            this._currentItemOffset += items.length;
-            this._renderItems(items);
+            this.currentItemOffset += items.length;
+            this.renderItems(items);
           }
         } catch(ex) {
           console.error('Failed to query items: %O', ex);
           unableToLoadItems();
         }
       } finally {
-        this._endLoadItems();
+        this.endLoadItems();
       }  
     };
     httpClient.onerror = e => unableToLoadItems();
     httpClient.send(null);
   }
 
-  _renderItems(items: ItemDto[]) {
-    for (const item of items) {
-      this._renderItem(item);
-    }
+  private renderItems(items: ItemDto[]) {
+    for (const item of items)
+      this.renderItem(item);
   }
 
-  _renderItem(item: ItemDto) {
-    const itemView = new ItemView(item, _ => this._masonry.layout());
+  private renderItem(item: ItemDto) {
+    const itemView = new ItemView(item, _ => this.masonry.layout());
     if (itemView.containerElem) {
-      this._itemsContainerElem.appendChild(itemView.containerElem);
-      this._masonry.addItems(itemView.containerElem);
-      this._masonry.layout();
-      this._totalItems++;
+      this.itemsContainerElem.appendChild(itemView.containerElem);
+      this.masonry.addItems(itemView.containerElem);
+      this.masonry.layout();
+      this.totalItems++;
     }
   }
 }
