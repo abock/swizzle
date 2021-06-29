@@ -116,12 +116,10 @@ class Overflow {
   private loadingItems: boolean = false;
   private currentItemOffset: number = 0;
   private totalItems: number = 0;
-  private lastLoaderTop: number;
 
   constructor(
     itemsContainerElem: HTMLElement,
     loaderElem: HTMLElement) {
-    this.lastLoaderTop = loaderElem.offsetTop;
     this.itemsContainerElem = itemsContainerElem;
     this.loaderElem = loaderElem;
 
@@ -137,36 +135,22 @@ class Overflow {
 
     this.loadItems();
 
-    document.addEventListener('scroll', e => this.maybeLoadMoreItems());
-  }
-
-  private areBoundsInViewport(bounds: DOMRect) {
-    return (
-      Math.ceil(bounds.top) >= 0 &&
-      Math.ceil(bounds.left) >= 0 &&
-      Math.floor(bounds.bottom) <= document.documentElement.clientHeight &&
-      Math.floor(bounds.right) <= document.documentElement.clientWidth);
-  }
-
-  private maybeLoadMoreItems() {
-    const bounds = this.loaderElem.getBoundingClientRect();
-    if (this.loaderElem.offsetTop !== this.lastLoaderTop &&
-      this.areBoundsInViewport(bounds)) {
-      this.lastLoaderTop = this.loaderElem.offsetTop;
-      this.loadItems();
-      return true;
-    }
-    return false;
+    document.addEventListener('scroll', e => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight)
+        this.loadItems();
+    });
   }
 
   private startLoadItems() {
     this.loadingItems = true;
     this.loaderElem.classList.add('loading');
+    console.log('startLoadItems(totalItems=%O)', this.totalItems);
   }
 
   private endLoadItems() {
     this.loadingItems = false;
     this.loaderElem.classList.remove('loading');
+    console.log('endLoadItems(totalItems=%O)', this.totalItems);
   }
 
   private loadItems() {
