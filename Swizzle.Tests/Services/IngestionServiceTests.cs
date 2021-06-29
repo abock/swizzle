@@ -197,7 +197,7 @@ namespace Swizzle.Services
             for (var i = 0; i < 100; i++)
             {
                 service.IngestFile(path);
-                Assert.Equal(1, service.GetCollection("collection1").Generation);
+                Assert.Equal(i + 1, service.GetCollection("collection1").Generation);
                 Assert.Collection(
                     service.GetCollection("collection1"),
                     item => Assert.Collection(

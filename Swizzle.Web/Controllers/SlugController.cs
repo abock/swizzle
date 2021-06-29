@@ -1,5 +1,4 @@
-using System;
-
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 
 using Swizzle.Dto;
@@ -23,7 +22,7 @@ namespace Swizzle.Controllers
             string slug,
             string? format = null)
         {
-            var items = _ingestionService.GetCollection(Request);
+            var (items, baseUri) = _ingestionService.GetCollection(Request);
 
             if (slug == "random")
             {
@@ -55,9 +54,29 @@ namespace Swizzle.Controllers
             if (item is null)
                 return NotFound();
 
+            if (format is null)
+            {
+                var uriRedirectResource = item.FindResource(
+                    ItemResourceKind.Uri);
+                if (uriRedirectResource is not null)
+                {
+                    var redirectUri = UriList
+                        .FromFile(uriRedirectResource.PhysicalPath)
+                        .Uris
+                        .FirstOrDefault();
+
+                    if (redirectUri is null)
+                        return Problem("no redirect URIs in resource");
+
+                    ConfigureNoCache();
+
+                    return Redirect(redirectUri);
+                }
+            }
+
             if (format is null ||
                 !ItemResourceKind.TryGetFromExtension(format, out _))
-                return Ok(item.ToDto(new Uri($"https://{Request.Host}/")));
+                return Ok(item.ToDto(baseUri));
 
             return Ok(item);
         }

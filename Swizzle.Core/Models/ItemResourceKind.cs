@@ -34,9 +34,14 @@ namespace Swizzle.Models
             ImmutableArray.Create(".ogv"),
             ImmutableArray.Create("video/ogg"));
 
+        public static readonly ItemResourceKind Uri = new(
+            5,
+            ImmutableArray.Create(".uri"),
+            ImmutableArray.Create("text/uri-list"));
+
         // NB. The order is not significant, but tests depend on it
         public static readonly ImmutableArray<ItemResourceKind> All
-            = ImmutableArray.Create(Jpeg, Gif, Mp4, Ogv);
+            = ImmutableArray.Create(Jpeg, Gif, Mp4, Ogv, Uri);
 
         readonly int _tag;
         public ImmutableArray<string> Extensions { get; }

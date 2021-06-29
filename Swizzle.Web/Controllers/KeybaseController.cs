@@ -19,7 +19,7 @@ namespace Swizzle.Controllers
         [HttpGet]
         public ActionResult Get()
         {
-            var items = _ingestionService.GetCollection(Request);
+            var (items, _) = _ingestionService.GetCollection(Request);
             var keybasePath = Path.Combine(
                 _ingestionService.ContentRootPath,
                 items.Key + ".keybase.txt");

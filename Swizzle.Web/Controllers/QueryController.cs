@@ -43,11 +43,9 @@ namespace Swizzle.Controllers
         {
             ConfigureNoCache();
 
-            var baseUri = new Uri($"https://{Request.Host}/");
-
-            var query = _ingestionService
-                .GetCollection(Request)
-                .Where(item => item.Exists);
+            var (items, baseUri) = _ingestionService.GetCollection(Request);
+            
+            var query = items.Where(item => item.Exists);
 
             query = order switch
             {
@@ -62,16 +60,16 @@ namespace Swizzle.Controllers
             if (limit.HasValue && limit.Value > 0)
                 query = query.Take(limit.Value);
 
-            var items = query.Select(item => item.ToDto(baseUri));
+            var itemDtos = query.Select(item => item.ToDto(baseUri));
 
             if ((render.HasValue && render.Value) ||
                 Request.Query.ContainsKey("render"))
             {
-                var item = items.First();
+                var item = itemDtos.First();
                 return Redirect(item.Resources[0].Uri.OriginalString);
             }
 
-            return Ok(items);
+            return Ok(itemDtos);
         }
     }
 }

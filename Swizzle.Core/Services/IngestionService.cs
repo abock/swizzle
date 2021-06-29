@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,7 +23,9 @@ namespace Swizzle.Services
 
     public sealed class IngestionService
     {
-        static readonly Regex s_slugValidator = new(@"^[a-zA-Z0-9]+$");
+        static readonly Regex s_slugValidator = new(
+            @"^[a-zA-Z0-9]+$",
+            RegexOptions.Compiled);
 
         public string ContentRootPath { get; }
         public string? DefaultCollectionKey { get; }
@@ -77,7 +78,7 @@ namespace Swizzle.Services
                 DefaultCollectionKey is not null &&
                 !TryGetCollection(DefaultCollectionKey, out collection))
                 throw new CollectionNotRegisteredException(collectionKey);
-            
+
             return collection;
         }
 
@@ -89,13 +90,19 @@ namespace Swizzle.Services
             return collection;
         }
 
-        static void ValidateSlug(string slug)
+        static string ValidateSlug(string slug)
         {
             if (!s_slugValidator.IsMatch(slug))
                 throw new IllegalSlugException(
                     slug,
                     Hashids.DEFAULT_ALPHABET);
+            return slug;
         }
+
+        static string CreateSlug(ItemCollection collection)
+            => ValidateSlug(new Hashids(
+                salt: collection.Key,
+                minHashLength: 4).Encode(collection.Count + 1));
 
         public void RegisterCollection(string collectionKey)
         {
@@ -113,12 +120,65 @@ namespace Swizzle.Services
                     new ItemCollection(collectionKey));
         }
 
+        public Item CreateAndIngestFile(
+            string collectionKey,
+            ItemResourceKind resourceKind,
+            ReadOnlySpan<byte> resourceData,
+            string? slug = null,
+            bool replaceResource = false,
+            IngestFileOptions options = IngestFileOptions.IngestSingle,
+            CancellationToken cancellationToken = default)
+        {
+            lock (this)
+            {
+                var collection = GetCollection(collectionKey);
+
+                slug ??= CreateSlug(collection);
+
+                var collectionPath = Path.Combine(
+                    ContentRootPath,
+                    collection.Key);
+
+                var filePath = Path.Combine(
+                    collectionPath,
+                    slug + resourceKind.PreferredExtension);
+
+                if (replaceResource)
+                {
+                    foreach (var path in Directory.EnumerateFiles(
+                        collectionPath,
+                        slug + "*"))
+                    {
+                        _logger.LogInformation(
+                            "Deleting resource for {Slug}: {Resource}",
+                            slug,
+                            path);
+                        
+                        File.Delete(path);
+                    }
+                }
+                else if (File.Exists(filePath))
+                {
+                    throw new ItemAlreadyExistsException(
+                        collection.Key,
+                        slug);
+                }
+
+                File.WriteAllBytes(filePath, resourceData.ToArray());
+
+                return IngestFile(
+                    filePath,
+                    options,
+                    cancellationToken);
+            }
+        }
+
         public void IngestRegisteredCollections(
             IngestFileOptions options = IngestFileOptions.IngestSingle,
             Func<string, Exception, bool>? itemExceptionHandler = null,
             CancellationToken cancellationToken = default)
         {
-            Parallel.ForEach(_collections.Keys, collectionKey =>
+            foreach (var collectionKey in _collections.Keys)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -133,7 +193,7 @@ namespace Swizzle.Services
                     "Ingested {Count} items into {CollectionKey}",
                     _collections[collectionKey].Count,
                     collectionKey);
-            });
+            }
         }
 
         public IEnumerable<Item> IngestDirectory(
@@ -212,36 +272,36 @@ namespace Swizzle.Services
                 out var item);
 
             var originalItem = item;
-            var collectionUpdateNeeded = false;
+            var resource = ingestionMetadata.CreateItemResource(
+                cancellationToken);
 
             if (item is null)
             {
-                collectionUpdateNeeded = true;
                 item = new Item(
                     Path.Combine(
                         ingestionMetadata.CollectionPath,
                         ingestionMetadata.Slug),
                     ingestionMetadata.CollectionKey,
                     ingestionMetadata.Slug,
-                    ingestionMetadata.CreateItemResource(cancellationToken));
+                    resource);
             }
-            else if (!item.TryGetResource(ingestionMetadata.FilePath, out _))
+            else
             {
-                collectionUpdateNeeded = true;
-                item = item.AddResource(
-                    ingestionMetadata.CreateItemResource(cancellationToken));
+                if (item.TryGetResource(
+                    ingestionMetadata.FilePath,
+                    out var existingResource))
+                    item = item.RemoveResource(existingResource);
+
+                item = item.AddResource(resource);
             }
 
-            if (collectionUpdateNeeded)
-            {
-                _collections = _collections.SetItem(
-                    ingestionMetadata.CollectionKey,
-                    originalItem is null
-                        ? ingestionMetadata.Collection.Add(item)
-                        : ingestionMetadata.Collection.Replace(
-                            originalItem,
-                            item));
-            }
+            _collections = _collections.SetItem(
+                ingestionMetadata.CollectionKey,
+                originalItem is null
+                    ? ingestionMetadata.Collection.Add(item)
+                    : ingestionMetadata.Collection.Replace(
+                        originalItem,
+                        item));
 
             if (options != IngestFileOptions.IngestSingle)
             {
