@@ -15,5 +15,5 @@ declare interface MasonryOptions {
 declare class Masonry {
   constructor(elem: HTMLElement, options: MasonryOptions);
   layout(): void;
-  appended(elem: HTMLElement): void;
+  addItems(elem: HTMLElement | HTMLElement[]): void;
 }

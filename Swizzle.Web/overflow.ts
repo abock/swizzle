@@ -229,7 +229,7 @@ class Overflow {
     const itemView = new ItemView(item, _ => this._masonry.layout());
     if (itemView.containerElem) {
       this._itemsContainerElem.appendChild(itemView.containerElem);
-      this._masonry.appended(itemView.containerElem);
+      this._masonry.addItems(itemView.containerElem);
       this._masonry.layout();
       this._totalItems++;
     }
