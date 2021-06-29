@@ -33,6 +33,12 @@ namespace Swizzle
 
             services.AddSingleton<IngestionService>();
 
+            services.AddSingleton<SwizzleAuthenticationService>();
+            services.AddAuthentication("Bearer")
+                .AddScheme<
+                    SwizzleAuthenticationOptions,
+                    SwizzleAuthenticationHandler>("Bearer", null);
+
             services.AddControllers(options =>
             {
                 options.OutputFormatters
@@ -95,6 +101,7 @@ namespace Swizzle
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
