@@ -74,7 +74,7 @@ class ItemView {
     this.videoElem.onloadeddata = () => this.maybeUpdateLayout();
     this.videoElem.onclick = () => this.togglePlay();
 
-    // this.videoElem.poster = posterUri;
+    this.videoElem.poster = posterUri;
     this.videoElem.style.backgroundImage = `url('${posterUri}')`;
     for (const sourceElem of sourceElems)
       this.videoElem.appendChild(sourceElem);
