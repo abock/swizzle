@@ -60,6 +60,14 @@ namespace Swizzle.Models
                 _resources.Add(resource),
                 Generation + 1);
 
+        public Item RemoveResource(ItemResource resource)
+            => new(
+                BasePath,
+                CollectionKey,
+                Slug,
+                _resources.Remove(resource),
+                Generation + 1);
+
         public bool TryGetResource(
             string filePath,
             out ItemResource resource)
