@@ -149,11 +149,21 @@ namespace Swizzle.Services
 
                 try
                 {
-                    item = IngestFile(filePath, options);
+                    item = IngestFile(
+                        filePath,
+                        options,
+                        cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    if (itemExceptionHandler is not null)
+                    if (itemExceptionHandler is null)
+                    {
+                        _logger.LogWarning(
+                            e,
+                            "Unable to ingest item: {ItemFilePath}",
+                            filePath);
+                    }
+                    else if (itemExceptionHandler is not null)
                     {
                         if (!itemExceptionHandler(filePath, e))
                             yield break;
