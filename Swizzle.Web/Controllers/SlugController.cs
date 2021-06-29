@@ -23,7 +23,7 @@ namespace Swizzle.Controllers
             string slug,
             string? format = null)
         {
-            var items = _ingestionService.GetCollection(Request.Host.Host);
+            var items = _ingestionService.GetCollection(Request);
 
             if (slug == "random")
             {

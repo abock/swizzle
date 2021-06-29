@@ -46,7 +46,7 @@ namespace Swizzle.Controllers
             var baseUri = new Uri($"https://{Request.Host}/");
 
             var query = _ingestionService
-                .GetCollection(Request.Host.Host)
+                .GetCollection(Request)
                 .Where(item => item.Exists);
 
             query = order switch

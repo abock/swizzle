@@ -70,12 +70,18 @@ namespace Swizzle.Services
                 collectionKey,
                 out collection);
 
+        public ItemCollection GetCollectionOrDefault(string collectionKey)
+        {
+            if (!TryGetCollection(collectionKey, out var collection) &&
+                DefaultCollectionKey is not null &&
+                !TryGetCollection(DefaultCollectionKey, out collection))
+                throw new CollectionNotRegisteredException(collectionKey);
+            
+            return collection;
+        }
+
         public ItemCollection GetCollection(string collectionKey)
         {
-            if (DefaultCollectionKey is not null &&
-                collectionKey is "localhost")
-                collectionKey = DefaultCollectionKey;
-
             if (!TryGetCollection(collectionKey, out var collection))
                 throw new CollectionNotRegisteredException(collectionKey);
 
