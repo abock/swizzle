@@ -22,19 +22,21 @@ namespace Swizzle.Controllers
             string slug,
             string? format = null)
         {
-            var (items, baseUri) = _ingestionService.GetCollection(Request);
+            var collection = _ingestionService.GetCollection(
+                Request,
+                out var baseUri);
 
             if (slug == "random")
             {
                 ConfigureNoCache();
                 if (format is not null)
                     format = "." + format;
-                return Redirect($"/{items.Random().Slug}{format}");
+                return Redirect($"/{collection.Random().Slug}{format}");
             }
 
             Item? GetItem(string slug)
             {
-                if (items.TryGetItemBySlug(slug, out var item))
+                if (collection.TryGetItemBySlug(slug, out var item))
                     return item;
 
                 // In legacy shart, as a hint for the rewriter in nginx,
@@ -43,8 +45,8 @@ namespace Swizzle.Controllers
                 // with the slug SLUG, so support this as well to preserve
                 // any old links.
                 if (slug.Length > 1 &&
-                    slug[0] == items.Key[0] &&
-                    items.TryGetItemBySlug(slug[1..], out item))
+                    slug[0] == collection.Key[0] &&
+                    collection.TryGetItemBySlug(slug[1..], out item))
                     return item;
 
                 return null;

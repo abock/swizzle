@@ -9,12 +9,27 @@ namespace Swizzle.Services
 {
     public static class IngestionServiceExtensions
     {
-        public static (ItemCollection Collection, Uri BaseUri) GetCollection(
+        public static ItemCollection GetCollection(
             this IngestionService ingestionService,
             HttpRequest httpRequest)
-            => (
-                ingestionService.GetCollectionOrDefault(httpRequest.Host.Host),
-                new Uri($"https://{httpRequest.Host}/"));
+            => ingestionService.GetCollection(httpRequest, out _);
+
+        public static ItemCollection GetCollection(
+            this IngestionService ingestionService,
+            HttpRequest httpRequest,
+            out Uri baseUri)
+        {
+            var metadata = httpRequest.GetCollectionRequestMetadata();
+
+            baseUri = metadata.BaseUri;
+
+            if (metadata.AllowDefaultCollection)
+                return ingestionService.GetCollectionOrDefault(
+                    metadata.CollectionKey);
+
+            return ingestionService.GetCollection(
+                metadata.CollectionKey);
+        }
 
         public static Item CreateAndIngestFile(
             this IngestionService ingestionService,

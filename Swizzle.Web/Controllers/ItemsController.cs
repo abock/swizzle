@@ -29,8 +29,9 @@ namespace Swizzle.Controllers
         [AllowAnonymous]
         public IEnumerable<ItemDto> Get()
         {
-            var (collection, baseUri) = _ingestionService
-                .GetCollection(Request);
+            var collection = _ingestionService.GetCollection(
+                Request,
+                out var baseUri);
 
             foreach (var item in collection)
                 yield return item.ToDto(baseUri);
@@ -56,7 +57,8 @@ namespace Swizzle.Controllers
                     .CreateAndIngestFile(
                         Request,
                         ItemResourceKind.Uri,
-                        s_utf8EncodingNoBom.GetBytes(createRequest.Target),
+                        s_utf8EncodingNoBom.GetBytes(
+                            createRequest.Target.OriginalString),
                         slug: createRequest.Slug,
                         replaceResource: replaceResource)
                     .ToDto(Request);

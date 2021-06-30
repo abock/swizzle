@@ -34,7 +34,7 @@ namespace Swizzle.Services
         {
             try
             {
-                var (collection, _) = _ingestionService.GetCollection(request);
+                var collection = _ingestionService.GetCollection(request);
 
                 foreach (var usersPath in new[]
                 {

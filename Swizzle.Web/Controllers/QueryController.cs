@@ -43,9 +43,9 @@ namespace Swizzle.Controllers
         {
             ConfigureNoCache();
 
-            var (items, baseUri) = _ingestionService.GetCollection(Request);
-            
-            var query = items.Where(item => item.Exists);
+            var query =  _ingestionService
+                .GetCollection(Request, out var baseUri)
+                .Where(item => item.Exists);
 
             query = order switch
             {
