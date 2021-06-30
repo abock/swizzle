@@ -43,13 +43,29 @@ namespace Swizzle.Services
             IOptions<IngestionServiceOptions> options)
             : this(
                 logger,
-                options.Value.RootDirectory ?? ".")
+                options.Value)
         {
-            DefaultCollectionKey = options.Value.DefaultCollectionKey;
-            if (options.Value.CollectionKeys is not null)
+        }
+
+        public IngestionService(
+            ILogger<IngestionService> logger,
+            IngestionServiceOptions options)
+            : this(
+                logger,
+                options.RootDirectory ?? ".")
+        {
+            DefaultCollectionKey = options.DefaultCollectionKey;
+
+            if (DefaultCollectionKey is not null)
+                RegisterCollection(DefaultCollectionKey);
+
+            if (options.CollectionKeys is not null)
             {
-                foreach (var collectionKey in options.Value.CollectionKeys)
-                    RegisterCollection(collectionKey);
+                foreach (var collectionKey in options.CollectionKeys)
+                {
+                    if (collectionKey is not null)
+                        RegisterCollection(collectionKey);
+                }
             }
         }
 
