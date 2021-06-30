@@ -9,6 +9,9 @@ namespace Swizzle
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            NumberHandling = JsonNumberHandling.Strict,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             Converters =
             {
                 new JsonStringEnumConverter()
