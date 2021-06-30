@@ -1,17 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\Swizzle.Core\Swizzle.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Mono.Options" Version="6.6.0.161" />
-    <PackageReference Include="Xamarin.Security.Keychain" Version="0.32.0" />
-  </ItemGroup>
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Swizzle.Core\Swizzle.Core.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Options" Version="6.6.0.161"/>
+    <PackageReference Include="Xamarin.Security.Keychain" Version="0.32.0"/>
+  </ItemGroup>
 </Project>
