@@ -1,6 +1,8 @@
+using System;
+
 namespace Swizzle.Dto
 {
     public sealed record CreateRedirectionItemDto(
-        string? Slug,
-        string Target);
+        Uri Target,
+        string? Slug = null);
 }
