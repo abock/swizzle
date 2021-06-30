@@ -155,9 +155,11 @@ namespace Swizzle.Services
                     ContentRootPath,
                     collection.Key);
 
+                var fileName = slug + resourceKind.PreferredExtension;
+
                 var filePath = Path.Combine(
                     collectionPath,
-                    slug + resourceKind.PreferredExtension);
+                    fileName);
 
                 if (replaceResource)
                 {
@@ -165,6 +167,9 @@ namespace Swizzle.Services
                         collectionPath,
                         slug + "*"))
                     {
+                        if (Path.GetFileName(path) == fileName)
+                            continue;
+
                         _logger.LogInformation(
                             "Deleting resource for {Slug}: {Resource}",
                             slug,
