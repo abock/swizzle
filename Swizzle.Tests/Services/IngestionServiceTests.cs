@@ -3,48 +3,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using Microsoft.Extensions.Logging;
-
 using Xunit;
 
 using Swizzle.Models;
 
 namespace Swizzle.Services
 {
-    public class IngestionServiceTests : IDisposable
+    public class IngestionServiceTests : IngestionServiceTestBase
     {
-        static readonly string s_contentRootPath = Path.GetFullPath(
-            Path.Combine("..", "..", "..", "test-content-root"));
-
-        static IngestionService CreateService()
-            => new(
-                LoggerFactory
-                    .Create(builder => builder.AddConsole())
-                    .CreateLogger<IngestionService>(),
-                s_contentRootPath);
-
         static string JoinPath(string collectionKey, string fileName)
-            => Path.Combine(s_contentRootPath, collectionKey, fileName);
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-
-            foreach (var mutableDir in Directory.EnumerateDirectories(
-                s_contentRootPath))
-            {
-                if (Path.GetFileName(mutableDir)[0] == '_')
-                    Directory.Delete(mutableDir, recursive: true);
-            }
-        }
+            => Path.Combine(ContentRootPath, collectionKey, fileName);
 
         static string CloneCollection(
             string sourceCollectionKey,
             Predicate<string>? predicate = null)
         {
             var destCollectionKey = $"_{Guid.NewGuid()}";
-            var sourceCollectionPath = Path.Combine(s_contentRootPath, sourceCollectionKey);
-            var destCollectionPath = Path.Combine(s_contentRootPath, destCollectionKey);
+            var sourceCollectionPath = Path.Combine(ContentRootPath, sourceCollectionKey);
+            var destCollectionPath = Path.Combine(ContentRootPath, destCollectionKey);
 
             try
             {
@@ -151,7 +127,7 @@ namespace Swizzle.Services
         {
             var service = CreateService();
 
-            var path = Path.Combine(s_contentRootPath, "collection1");
+            var path = Path.Combine(ContentRootPath, "collection1");
 
             Assert.Throws<IllegalPathException>(
                 () => service.IngestFile(Path.Combine("a.gif")));
@@ -463,7 +439,7 @@ namespace Swizzle.Services
 
             CollectionAssert(service
                 .IngestDirectory(
-                    Path.Combine(s_contentRootPath, collectionKey),
+                    Path.Combine(ContentRootPath, collectionKey),
                     IngestFileOptions.ProduceAlternateResources)
                 .OrderBy(i => i.Slug));
 
