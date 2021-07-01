@@ -85,7 +85,7 @@ namespace Swizzle
             IntPtr handle;
             try
             {
-                handle = NativeLibraryLoader.LoadLibrary("avformat");
+                handle = NativeLibraryLoader.LoadLibrary("avformat", 58);
             }
             catch (DllNotFoundException e)
             {
