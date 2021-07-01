@@ -19,15 +19,9 @@ namespace Swizzle.InteropServices
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 s_isLinux = true;
-                s_librarySearchPaths = new[]
-                {
-                    "/usr/local/lib64",
-                    "/usr/local/lib",
-                    "/usr/local/lib/x86_64-linux-gnu",
-                    "/lib/x86_64-linux-gnu",
-                    "/usr/lib/x86_64-linux-gnu",
-                    "/usr/lib64"
-                };
+                s_librarySearchPaths = LdSoConfParser
+                    .ParseSystemDefault()
+                    .ToArray();
                 s_libraryPrefixes = new[] { "", "lib" };
                 s_libraryExtensions = new[] { ".so" };
             }
