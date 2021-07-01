@@ -410,32 +410,75 @@ namespace Swizzle.Services
             var service = CreateService();
             service.RegisterCollection(collectionKey);
 
+            void ResourceAssert(
+                ItemResource resource,
+                string expectedPath,
+                FFMpeg.VideoStreamMetadata expectedVideoMetadata)
+            {
+                Assert.Equal(expectedPath, resource.PhysicalPath);
+                Assert.Equal(expectedVideoMetadata.Width, resource.Width);
+                Assert.Equal(expectedVideoMetadata.Height, resource.Height);
+                Assert.Equal(expectedVideoMetadata.Duration, resource.Duration);
+            }
+
             void CollectionAssert(IEnumerable<Item> collection)
                 => Assert.Collection(collection,
                     item => Assert.Collection(
                         item.Resources,
-                        r => Assert.Equal(JoinPath("a5lZeeK.gif"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("a5lZeeK.jpg"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("a5lZeeK.mp4"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("a5lZeeK.ogv"), r.PhysicalPath)),
+                        r => ResourceAssert(
+                            r, JoinPath("a5lZeeK.gif"),
+                            new(400, 400, TimeSpan.FromTicks(22800000))),
+                        r => ResourceAssert(
+                            r, JoinPath("a5lZeeK.jpg"),
+                            new(400, 400, TimeSpan.Zero)),
+                        r => ResourceAssert(
+                            r, JoinPath("a5lZeeK.mp4"),
+                            new(400, 400, TimeSpan.FromTicks(22800000))),
+                        r => ResourceAssert(
+                            r, JoinPath("a5lZeeK.ogv"),
+                            new(400, 400, TimeSpan.FromTicks(22800000)))),
                     item => Assert.Collection(
                         item.Resources,
-                        r => Assert.Equal(JoinPath("N2w1OR.mp4"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("N2w1OR.jpg"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("N2w1OR.gif"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("N2w1OR.ogv"), r.PhysicalPath)),
+                        r => ResourceAssert(
+                            r, JoinPath("N2w1OR.mp4"), 
+                            new(356, 640, TimeSpan.FromTicks(83300000))),
+                        r => ResourceAssert(
+                            r, JoinPath("N2w1OR.jpg"), 
+                            new(356, 640, TimeSpan.Zero)),
+                        r => ResourceAssert(
+                            r, JoinPath("N2w1OR.gif"), 
+                            new(356, 640, TimeSpan.FromTicks(83300000))),
+                        r => ResourceAssert(
+                            r, JoinPath("N2w1OR.ogv"), 
+                            new(356, 640, TimeSpan.FromTicks(83300000)))),
                     item => Assert.Collection(
                         item.Resources,
-                        r => Assert.Equal(JoinPath("ReWy5RA.gif"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("ReWy5RA.jpg"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("ReWy5RA.mp4"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("ReWy5RA.ogv"), r.PhysicalPath)),
+                        r => ResourceAssert(
+                            r, JoinPath("ReWy5RA.gif"),
+                            new(400, 220, TimeSpan.FromTicks(21900000))),
+                        r => ResourceAssert(
+                            r, JoinPath("ReWy5RA.jpg"),
+                            new(400, 220, TimeSpan.Zero)),
+                        r => ResourceAssert(
+                            r, JoinPath("ReWy5RA.mp4"),
+                            new(400, 220, TimeSpan.FromTicks(21700000))),
+                        r => ResourceAssert(
+                            r, JoinPath("ReWy5RA.ogv"),
+                            new(400, 220, TimeSpan.FromTicks(21200000)))),
                     item => Assert.Collection(
                         item.Resources,
-                        r => Assert.Equal(JoinPath("WkRmXJO.gif"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("WkRmXJO.jpg"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("WkRmXJO.mp4"), r.PhysicalPath),
-                        r => Assert.Equal(JoinPath("WkRmXJO.ogv"), r.PhysicalPath)));
+                        r => ResourceAssert(
+                            r, JoinPath("WkRmXJO.gif"),
+                            new(400, 250, TimeSpan.FromTicks(36000000))),
+                        r => ResourceAssert(
+                            r, JoinPath("WkRmXJO.jpg"),
+                            new(400, 250, TimeSpan.Zero)),
+                        r => ResourceAssert(
+                            r, JoinPath("WkRmXJO.mp4"),
+                            new(400, 250, TimeSpan.FromTicks(36000000))),
+                        r => ResourceAssert(
+                            r, JoinPath("WkRmXJO.ogv"),
+                            new(400, 250, TimeSpan.FromTicks(36000000)))));
 
             CollectionAssert(service
                 .IngestDirectory(

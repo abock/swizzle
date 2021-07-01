@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Swizzle.InteropServices;
+
 #pragma warning disable IDE1006
 #pragma warning disable CA2101
 
@@ -69,6 +71,10 @@ namespace Swizzle
             IntPtr /* AVDictionary** */ options);
         static readonly avformat_open_input_fn? avformat_open_input;
 
+        delegate int avformat_close_input_fn(
+            in IntPtr /* AVFormatContext** */ s);
+        static readonly avformat_close_input_fn? avformat_close_input;
+
         delegate int avformat_find_stream_info_fn(
             IntPtr /* AVFormatContext* */ ic,
             IntPtr /* AVDictionary** */ options);
@@ -76,11 +82,18 @@ namespace Swizzle
 
         static FFMpeg()
         {
-            var ffmpegPath = PathHelpers.FindProgramPath("ffmpeg");
-            if (ffmpegPath is null)
+            IntPtr handle;
+            try
+            {
+                handle = NativeLibraryLoader.LoadLibrary("avformat");
+            }
+            catch (DllNotFoundException e)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Error.WriteLine(e);
+                Console.ResetColor();
                 return;
-
-            var handle = NativeLibrary.Load(ffmpegPath);
+            }
 
             T Dlsym<T>(string symbol)
                 => Marshal.GetDelegateForFunctionPointer<T>(
@@ -94,6 +107,9 @@ namespace Swizzle
 
             avformat_open_input = Dlsym<avformat_open_input_fn>(
                 nameof(avformat_open_input));
+
+            avformat_close_input = Dlsym<avformat_close_input_fn>(
+                nameof(avformat_close_input));
 
             avformat_find_stream_info = Dlsym<avformat_find_stream_info_fn>(
                 nameof(avformat_find_stream_info));
@@ -111,6 +127,7 @@ namespace Swizzle
 
             if (avformat_alloc_context is null ||
                 avformat_open_input is null ||
+                avformat_close_input is null ||
                 avformat_find_stream_info is null ||
                 avformat_free_context is null)
                 return false;
@@ -122,6 +139,7 @@ namespace Swizzle
                 return false;
 
             var formatContext = avformat_alloc_context();
+            var fileOpened = false;
 
             try
             {
@@ -131,6 +149,8 @@ namespace Swizzle
                     IntPtr.Zero,
                     IntPtr.Zero) != 0)
                     return false;
+
+                fileOpened = true;
 
                 if (avformat_find_stream_info(formatContext, IntPtr.Zero) < 0)
                     return false;
@@ -188,14 +208,27 @@ namespace Swizzle
                     return false;
 
                 if (codecId is not (AVCodecID.MJPEG or AVCodecID.PNG))
-                    duration = TimeSpan.FromTicks(Marshal.ReadInt64(
+                {
+                    // Durations in ffmpeg are in microseconds
+                    var ticks = Marshal.ReadInt64(
                         formatContext,
-                        AVFormatContext_field_offset__duration) * 10);
+                        AVFormatContext_field_offset__duration) * 10;
+
+                    // Truncate to 10ms resolution; ffmpeg does this in
+                    // ffprobe, which is what we'd get if we parsed console
+                    // output from ffprobe...
+                    var roundedTicks = ticks - (ticks % 100000);
+
+                    duration = TimeSpan.FromTicks(roundedTicks);
+                }
 
                 return true;
             }
             finally
             {
+                if (fileOpened)
+                    avformat_close_input(in formatContext);
+
                 if (filenameUtf8 != IntPtr.Zero)
                     Marshal.FreeCoTaskMem(filenameUtf8);
 
